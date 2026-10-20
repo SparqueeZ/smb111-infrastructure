@@ -1,0 +1,60 @@
+
+# Système et éditeurs
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Variables d'environnement et secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+id_rsa
+id_ed25519
+clouds.yaml
+secure.yaml
+*-secrets.yaml
+*-secret.yaml
+*.kubeconfig
+kubeconfig
+kubeconfig.*
+
+# Terraform
+**/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+*.tfvars.json
+!*.tfvars.example
+crash.log
+crash.*.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Ansible
+*.retry
+.ansible/
+vault-password*
+vault_pass*
+
+# Node.js
+node_modules/
+dist/
+coverage/
+npm-debug.log*
+
+# Python
+__pycache__/
+.venv/
+*.pyc
+
+# Fichiers temporaires
+*.tmp
+*.bak
+*.swp
