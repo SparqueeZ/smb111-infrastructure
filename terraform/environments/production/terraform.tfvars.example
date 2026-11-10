@@ -1,0 +1,12 @@
+# Copier en terraform.tfvars (ignoré par Git) pour surcharger une valeur par
+# défaut de variables.tf. Sans ce fichier, les trois nœuds sont créés.
+# Aucun secret ici : les clés d'API passent par les variables d'environnement
+# CLOUDSTACK_API_URL, CLOUDSTACK_API_KEY et CLOUDSTACK_SECRET_KEY.
+
+# Première étape (tâche « Créer Odin seul ») : ne déclarer qu'Odin.
+# nodes = {
+#   "odin-cp-01" = { role = "control_plane", ip = "10.35.10.10", cpu = 2, memory_mb = 4096, root_disk_gb = 30 }
+# }
+
+# Repli si le load balancer public n'est pas disponible dans le VPC.
+# app_exposure = "port_forward"

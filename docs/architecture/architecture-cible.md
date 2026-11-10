@@ -37,7 +37,7 @@ Trois VM, un seul tier, un cluster Kubernetes kubeadm : un nœud de contrôle (O
 
 L'offre `lab-libre` accepte de 1 à 16 vCPU et de 1 à 64 Go, sur stockage local. Le total tient dans les limites relevées pour `smb-g3`.
 
-Système prévu : Ubuntu 24.04. **Point ouvert** : le relevé du lot 1 n'a trouvé aucun template Ubuntu dans le lab (voir §8).
+Système : Ubuntu 24.04, template public `Ubuntu 24.04 LTS` du lab. Disque racine : 30 Go pour Odin, 50 Go pour chaque worker (stockage local).
 
 ## 3. Plan d'adressage
 
@@ -98,7 +98,7 @@ Trois adresses publiques, dont deux acquises explicitement :
 - L'exposition passe par des redirections de port, pas par du NAT statique. Ainsi, une IP n'ouvre que les ports listés.
 - Thor et Tyr sont joints par rebond SSH à travers Odin (`ProxyJump`). Ils n'ont pas de port SSH public.
 - Les IP publiques ne sont pas figées : elles peuvent changer après un `terraform destroy`. Terraform les publie en sortie, et l'inventaire Ansible les reprend.
-- Le relevé du lot 1 doit trancher si l'IP Source NAT compte dans la limite d'IP du projet.
+- L'IP Source NAT compte dans la limite d'IP du projet (3) : les deux IP acquises consomment tout le budget.
 
 ## 5. Noms et DNS
 
@@ -153,12 +153,14 @@ Jusqu'au cluster fonctionnel, l'ACL `default_allow` reste en place pour ne pas s
 
 | # | Point | Effet | Tranché par |
 |---|---|---|---|
-| 1 | Aucun template Ubuntu trouvé dans le lab | Bloque le provisionnement d'Odin | Administrateur du lab (template ou ISO), avant le lot 2 |
-| 2 | Le service Lb de la Default VPC offering est fourni par `InternalLbVm` : répartition **interne** au VPC | Une règle de load balancer sur l'IP applicative n'est probablement pas possible. Repli : redirection 80/443 vers un seul worker, écart à documenter | Test au lot 2 (« Acquérir l'IP applicative ») |
-| 3 | L'IP Source NAT compte-t-elle dans la limite d'IP publiques ? | Budget de 3 ou de 2 IP | Relevé des limites |
-| 4 | Hairpin : une VM peut-elle joindre l'IP publique du VPC ? | Résolution de `auth.asgard.internal` depuis les pods et les nœuds | Vérifications depuis Odin (lot 2) |
-| 5 | MTU 1500 sur le tier, moins l'en-tête VXLAN | MTU des pods à 1450 | Test de fumée réseau (lot 4) |
-| 6 | Version de CloudStack et hyperviseur non communiqués | Compatibilité du provider Terraform | Test du provider au lot 2 |
+| 1 | ~~Aucun template Ubuntu trouvé dans le lab~~ | **Levé le 10/11/2026** : template public `Ubuntu 24.04 LTS` (image cloud officielle, KVM, 3,5 Go) | Relevé par l'API (lot 2) |
+| 2 | ~~Service Lb fourni par `InternalLbVm` seulement~~ | **Levé le 10/11/2026** : l'offre de VPC fournit Lb par `InternalLbVm` **et** `VpcVirtualRouter`, et l'offre de tier `DefaultIsolatedNetworkOfferingForVpcNetworks` par `VpcVirtualRouter`. Load balancer public **confirmé** : règles 80 et 443 vers Thor et Tyr, répartition vérifiée | Lot 2 |
+| 3 | ~~L'IP Source NAT compte-t-elle dans la limite ?~~ | **Tranché le 10/11/2026** : oui. Limite de 3 IP, 1 consommée par la Source NAT (10.0.50.26). Il reste exactement les 2 IP du budget | Relevé par l'API (lot 2) |
+| 4 | ~~Hairpin : une VM peut-elle joindre l'IP publique du VPC ?~~ | **Levé le 10/11/2026** : oui, Odin joint l'IP d'administration sur un port redirigé | Vérifications depuis Odin (lot 2) |
+| 5 | ~~MTU 1500 sur le tier~~ | **Corrigé le 10/11/2026** : le MTU des interfaces est 1450. MTU des pods à **1400** (VXLAN) | Mesuré au lot 2, à confirmer au test de fumée réseau (lot 4) |
+| 7 | L'API CloudStack n'est pas joignable depuis les VM | Pas d'intégration CloudStack dans le cluster ; tout passe par Terraform depuis le poste | Constat du lot 2 |
+| 8 | Depuis le Wi-Fi élèves, seuls 22, 80, 443, 3389 et 5900-5910 sont joignables | L'API Kubernetes (6443) et le DNS interne (53/udp) exigent le VPN, y compris en soutenance | Constat du lot 2 |
+| 6 | ~~Version de CloudStack et hyperviseur non communiqués~~ | **Levé le 10/11/2026** : CloudStack 4.22.1.1, hyperviseur KVM. Le provider Terraform 0.7.0 échoue sur les redirections de port dans un projet : provider épinglé en 0.6.0 | Relevé par l'API (lot 2) |
 
 ## 9. Validation
 
