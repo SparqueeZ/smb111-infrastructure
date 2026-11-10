@@ -30,6 +30,8 @@ kubeconfig.*
 *.tfvars
 *.tfvars.json
 !*.tfvars.example
+*.tfplan
+tfplan
 crash.log
 crash.*.log
 override.tf
@@ -42,6 +44,11 @@ override.tf.json
 .ansible/
 vault-password*
 vault_pass*
+.vault-password*
+.vault_pass*
+
+# Rapports gitleaks
+gitleaks-report.*
 
 # Node.js
 node_modules/

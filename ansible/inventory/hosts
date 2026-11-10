@@ -1,0 +1,11 @@
+# Inventaire SMB111 — Émarge
+# Les adresses seront renseignées après le provisionnement Terraform (lot 2).
+# Aucun mot de passe ici : connexion par clé SSH, secrets dans Ansible Vault.
+
+[control_plane]
+
+[workers]
+
+[k8s_cluster:children]
+control_plane
+workers

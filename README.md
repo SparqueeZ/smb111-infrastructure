@@ -14,7 +14,7 @@ d'émargement développée dans le cadre du projet.
 
 ## Technologies
 
-- Cloud : Infomaniak Public Cloud / OpenStack
+- Cloud : Apache CloudStack
 - Infrastructure as Code : Terraform
 - Configuration : Ansible
 - Orchestration : Kubernetes (kubeadm)
