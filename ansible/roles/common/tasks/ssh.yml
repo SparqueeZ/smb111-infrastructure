@@ -1,0 +1,12 @@
+---
+# Les fichiers de /etc/ssh/sshd_config.d sont lus par ordre alphabétique et la première
+# valeur lue l'emporte : 00-* passe avant 50-cloud-init.conf, qui active le mot de passe.
+- name: Poser la configuration SSH durcie
+  ansible.builtin.template:
+    src: sshd-hardening.conf.j2
+    dest: /etc/ssh/sshd_config.d/00-asgard-hardening.conf
+    owner: root
+    group: root
+    mode: "0644"
+    validate: /usr/sbin/sshd -t -f %s
+  notify: Redémarrer ssh

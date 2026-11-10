@@ -1,0 +1,4 @@
+---
+- name: Rafraîchir l'index apt
+  ansible.builtin.apt:
+    update_cache: true

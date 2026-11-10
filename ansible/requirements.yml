@@ -1,0 +1,11 @@
+---
+# Collections utilisées par les playbooks.
+# Installation : ansible-galaxy collection install -r requirements.yml
+# (déjà fournies par le paquet complet `ansible` 14.x ; versions minimales ci-dessous).
+collections:
+  - name: ansible.posix
+    version: ">=2.0.0"
+  - name: community.general
+    version: ">=10.0.0"
+  - name: kubernetes.core
+    version: ">=6.0.0"

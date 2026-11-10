@@ -1,0 +1,7 @@
+---
+# Lot 3 — paquets Kubernetes (kubeadm, kubelet, kubectl) en version figée.
+- name: Paquets Kubernetes
+  hosts: k8s
+  become: true
+  roles:
+    - kubernetes

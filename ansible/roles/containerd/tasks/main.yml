@@ -1,0 +1,57 @@
+---
+- name: Installer containerd
+  ansible.builtin.apt:
+    name: "{{ containerd_package }}"
+    state: present
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Créer le répertoire de configuration
+  ansible.builtin.file:
+    path: /etc/containerd
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+# La configuration est régénérée depuis les valeurs par défaut de la version installée,
+# puis deux réglages sont appliqués : pilote de cgroup systemd et image pause.
+- name: Lire la configuration par défaut de containerd
+  ansible.builtin.command: containerd config default
+  register: containerd_default_config
+  changed_when: false
+  check_mode: false
+
+- name: Écrire la configuration avec SystemdCgroup = true
+  ansible.builtin.copy:
+    dest: "{{ containerd_config_path }}"
+    content: >-
+      {{ containerd_default_config.stdout
+         | regex_replace('SystemdCgroup = false', 'SystemdCgroup = true')
+         | regex_replace("sandbox = '[^']*'", "sandbox = '" ~ containerd_sandbox_image ~ "'") }}
+    owner: root
+    group: root
+    mode: "0644"
+  notify: Redémarrer containerd
+
+- name: Vérifier que le pilote systemd est bien configuré
+  ansible.builtin.command: grep -q 'SystemdCgroup = true' {{ containerd_config_path }}
+  changed_when: false
+  check_mode: false
+
+- name: Indiquer à crictl le socket de containerd
+  ansible.builtin.copy:
+    dest: /etc/crictl.yaml
+    content: |
+      runtime-endpoint: unix:///run/containerd/containerd.sock
+      image-endpoint: unix:///run/containerd/containerd.sock
+      timeout: 10
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Activer et démarrer containerd
+  ansible.builtin.systemd_service:
+    name: containerd
+    state: started
+    enabled: true

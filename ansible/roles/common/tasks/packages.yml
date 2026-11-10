@@ -1,0 +1,40 @@
+---
+# Une connexion HTTP figée vers un miroir a bloqué apt 18 minutes le 10/11/2026 :
+# délai d'expiration court et nouvelles tentatives.
+- name: Borner les téléchargements apt
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/80asgard-acquire
+    content: |
+      // Géré par Ansible (rôle common)
+      Acquire::http::Timeout "30";
+      Acquire::https::Timeout "30";
+      Acquire::Retries "3";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Mettre à jour l'index et les paquets installés
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+    upgrade: safe
+
+- name: Installer les paquets utilitaires
+  ansible.builtin.apt:
+    name: "{{ common_packages }}"
+    state: present
+
+- name: Régler le fuseau horaire
+  community.general.timezone:
+    name: "{{ asgard_timezone }}"
+
+- name: Installer systemd-timesyncd
+  ansible.builtin.apt:
+    name: systemd-timesyncd
+    state: present
+
+- name: Activer la synchronisation NTP
+  ansible.builtin.systemd_service:
+    name: systemd-timesyncd
+    state: started
+    enabled: true

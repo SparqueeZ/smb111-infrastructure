@@ -1,0 +1,27 @@
+---
+- name: Empêcher cloud-init de réécrire le nom d'hôte et /etc/hosts
+  ansible.builtin.copy:
+    dest: /etc/cloud/cloud.cfg.d/99-asgard.cfg
+    content: |
+      # Géré par Ansible (rôle common) : nom d'hôte et /etc/hosts sont posés par Ansible.
+      preserve_hostname: true
+      manage_etc_hosts: false
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Fixer le nom d'hôte conforme à l'inventaire
+  ansible.builtin.hostname:
+    name: "{{ inventory_hostname }}"
+    use: systemd
+
+- name: Déclarer les nœuds et l'API Kubernetes dans /etc/hosts
+  ansible.builtin.blockinfile:
+    path: /etc/hosts
+    marker: "# {mark} ASGARD — géré par Ansible"
+    insertafter: "^127.0.0.1"
+    block: |
+      {% for host in groups['k8s'] | sort %}
+      {{ hostvars[host].node_ip }} {{ host }}.{{ asgard_domain }} {{ host }}
+      {% endfor %}
+      {{ hostvars[groups['control_plane'][0]].node_ip }} {{ k8s_api_name }}

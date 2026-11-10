@@ -1,0 +1,4 @@
+---
+# Worker. Joint par son IP privée, à travers Odin (group_vars/workers.yml).
+ansible_host: 10.35.10.11
+node_ip: 10.35.10.11

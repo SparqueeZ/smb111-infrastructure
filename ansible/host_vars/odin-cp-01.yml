@@ -1,0 +1,4 @@
+---
+# Control plane. Joint par l'IP d'administration (redirection du port 22).
+ansible_host: "{{ asgard_admin_ip }}"
+node_ip: 10.35.10.10

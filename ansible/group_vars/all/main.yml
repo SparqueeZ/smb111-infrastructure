@@ -1,0 +1,30 @@
+---
+# Variables communes aux trois nœuds.
+# Source des valeurs : docs/architecture/architecture-cible.md et `terraform output`
+# (terraform/environments/production).
+
+# Connexion
+ansible_user: ubuntu
+
+# Adresses publiques (terraform output admin_ip / app_ip).
+# Elles changent après un `terraform destroy` : les reporter ici.
+asgard_admin_ip: 10.0.50.31
+asgard_app_ip: 10.0.50.33
+
+# Réseau et noms
+asgard_domain: asgard.internal
+asgard_subnet: 10.35.10.0/24
+asgard_gateway: 10.35.10.1
+k8s_api_name: "k8s-api.{{ asgard_domain }}"
+k8s_api_port: 6443
+k8s_pod_subnet: 10.244.0.0/16
+k8s_service_subnet: 10.96.0.0/12
+
+# Système
+asgard_timezone: Europe/Paris
+
+# Kubernetes : version figée (justification : docs/architecture/decisions.md, D-03).
+# Dépôt pkgs.k8s.io de la version mineure, paquets en version exacte puis figés (apt-mark hold).
+kubernetes_version: "1.37.2"
+kubernetes_minor: "{{ kubernetes_version.split('.')[0:2] | join('.') }}"
+kubernetes_package_version: "{{ kubernetes_version }}-1.1"

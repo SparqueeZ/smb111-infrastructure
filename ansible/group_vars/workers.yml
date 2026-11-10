@@ -1,0 +1,3 @@
+---
+# Thor et Tyr n'ont pas de port SSH public : rebond par Odin (IP d'administration).
+ansible_ssh_common_args: "-o ProxyJump={{ ansible_user }}@{{ asgard_admin_ip }}"

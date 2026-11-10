@@ -1,0 +1,7 @@
+---
+# Lot 3 — runtime de conteneurs.
+- name: Runtime containerd
+  hosts: k8s
+  become: true
+  roles:
+    - containerd

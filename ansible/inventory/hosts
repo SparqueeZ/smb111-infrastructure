@@ -1,11 +1,15 @@
 # Inventaire SMB111 — Émarge
-# Les adresses seront renseignées après le provisionnement Terraform (lot 2).
-# Aucun mot de passe ici : connexion par clé SSH, secrets dans Ansible Vault.
+# Adresses : host_vars/<nœud>.yml (IP privées) et group_vars/all/main.yml (IP publiques,
+# reprises de `terraform output`). Aucun mot de passe ici : connexion par clé SSH,
+# secrets dans Ansible Vault (group_vars/all/vault.yml).
 
 [control_plane]
+odin-cp-01
 
 [workers]
+thor-wk-01
+tyr-wk-02
 
-[k8s_cluster:children]
+[k8s:children]
 control_plane
 workers

@@ -1,0 +1,7 @@
+---
+# Paquet Ubuntu (noble-updates fournit containerd 2.x ; 1.x ne fonctionnera plus avec le kubelet 1.38).
+containerd_package: containerd
+containerd_config_path: /etc/containerd/config.toml
+# Image pause attendue par kubeadm (`kubeadm config images list`), alignée pour éviter
+# l'avertissement du preflight et un second téléchargement.
+containerd_sandbox_image: registry.k8s.io/pause:3.10.1

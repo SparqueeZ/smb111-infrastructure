@@ -1,0 +1,7 @@
+---
+# Lot 3 — configuration de base et durcissement des trois nœuds.
+- name: Socle système des nœuds Asgard
+  hosts: k8s
+  become: true
+  roles:
+    - common

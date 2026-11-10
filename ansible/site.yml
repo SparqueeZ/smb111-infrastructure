@@ -1,0 +1,10 @@
+---
+# Point d'entrée : applique tout le socle dans l'ordre.
+- name: Socle système
+  ansible.builtin.import_playbook: 01_base.yml
+
+- name: Runtime containerd
+  ansible.builtin.import_playbook: 02_containerd.yml
+
+- name: Paquets Kubernetes
+  ansible.builtin.import_playbook: 03_kubernetes.yml

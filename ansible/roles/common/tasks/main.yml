@@ -1,0 +1,15 @@
+---
+- name: Noms d'hôtes et /etc/hosts
+  ansible.builtin.import_tasks: hostname.yml
+
+- name: Paquets, fuseau horaire et synchronisation NTP
+  ansible.builtin.import_tasks: packages.yml
+
+- name: Prérequis Kubernetes (swap, modules, sysctl)
+  ansible.builtin.import_tasks: kubernetes_prereqs.yml
+
+- name: Durcissement SSH
+  ansible.builtin.import_tasks: ssh.yml
+
+- name: Mises à jour de sécurité automatiques
+  ansible.builtin.import_tasks: unattended_upgrades.yml

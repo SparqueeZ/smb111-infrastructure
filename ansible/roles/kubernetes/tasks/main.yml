@@ -1,0 +1,38 @@
+---
+- name: Déclarer le dépôt pkgs.k8s.io de la version mineure retenue
+  ansible.builtin.deb822_repository:
+    name: kubernetes
+    types: deb
+    uris: "{{ kubernetes_repo_url }}"
+    suites: /
+    signed_by: "{{ kubernetes_repo_url }}Release.key"
+    state: present
+  notify: Rafraîchir l'index apt
+
+- name: Appliquer tout de suite le rafraîchissement de l'index
+  ansible.builtin.meta: flush_handlers
+
+- name: Installer kubelet, kubeadm et kubectl en version exacte
+  ansible.builtin.apt:
+    name: "{{ kubernetes_packages | map('regex_replace', '$', '=' ~ kubernetes_package_version) | list }}"
+    state: present
+    allow_change_held_packages: true
+    allow_downgrade: false
+
+- name: Installer crictl (cri-tools) en version exacte
+  ansible.builtin.apt:
+    name: "cri-tools={{ kubernetes_cri_tools_version }}"
+    state: present
+    allow_change_held_packages: true
+    allow_downgrade: false
+
+- name: Figer les paquets Kubernetes (apt-mark hold)
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop: "{{ kubernetes_packages + ['cri-tools'] }}"
+
+- name: Activer kubelet (il attend kubeadm init / join pour démarrer réellement)
+  ansible.builtin.systemd_service:
+    name: kubelet
+    enabled: true

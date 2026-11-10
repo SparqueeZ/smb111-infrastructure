@@ -1,0 +1,35 @@
+---
+# 50unattended-upgrades (paquet Ubuntu) n'autorise que les origines -security et ESM.
+# On active le service et on interdit le redémarrage et la mise à jour des paquets Kubernetes.
+- name: Installer unattended-upgrades
+  ansible.builtin.apt:
+    name: unattended-upgrades
+    state: present
+
+- name: Activer les mises à jour quotidiennes
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    content: |
+      // Géré par Ansible (rôle common)
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    owner: root
+    group: root
+    mode: "0644"
+
+- name: Limiter aux correctifs de sécurité, sans redémarrage automatique
+  ansible.builtin.copy:
+    dest: /etc/apt/apt.conf.d/52asgard-unattended-upgrades
+    content: |
+      // Géré par Ansible (rôle common)
+      Unattended-Upgrade::Automatic-Reboot "false";
+      Unattended-Upgrade::Remove-Unused-Dependencies "true";
+      Unattended-Upgrade::Package-Blacklist {
+      {% for pkg in common_unattended_blacklist %}
+          "{{ pkg }}";
+      {% endfor %}
+      };
+    owner: root
+    group: root
+    mode: "0644"

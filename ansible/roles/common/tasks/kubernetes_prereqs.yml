@@ -1,0 +1,28 @@
+---
+- name: Désactiver le swap en cours
+  ansible.builtin.command: swapoff -a
+  when: ansible_facts['swaptotal_mb'] | int > 0
+  changed_when: true
+
+- name: Retirer le swap de /etc/fstab
+  ansible.builtin.replace:
+    path: /etc/fstab
+    regexp: '^([^#\s]+\s+\S+\s+swap\s+.*)$'
+    replace: '# \1'
+
+- name: Charger les modules noyau maintenant et à chaque démarrage
+  community.general.modprobe:
+    name: "{{ item }}"
+    state: present
+    persistent: present
+  loop: "{{ common_kernel_modules }}"
+
+- name: Régler les paramètres réseau du noyau
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-kubernetes.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ common_sysctl | dict2items }}"
