@@ -16,7 +16,7 @@ Ce document consigne ce qui a été mesuré sur la plateforme. Chaque hypothèse
 | Offre de VPC | `Default VPC offering`. Lb : `InternalLbVm` et `VpcVirtualRouter` |
 | Offre réseau du tier | `DefaultIsolatedNetworkOfferingForVpcNetworks`. Tous les services par `VpcVirtualRouter`, Lb compris |
 | ACL `default_allow` | ID `327b07b9-ced3-11f1-bc2c-bc2411fa02b7` (ACL globale) |
-| VPC `vpc-smb-g3` | ID `987d7024-2c8d-42d6-bd78-7b4400a20e50`, 10.35.0.0/16, état Enabled |
+| VPC `vpc-smb-g3` | 10.35.0.0/16, état Enabled. ID au relevé : `987d7024-…` ; depuis le cycle destroy puis apply : `11019b5b-43cd-4d5b-af58-7b939fe77bf7` |
 | IP Source NAT | 10.0.50.26 |
 
 ### Limites du projet `smb-g3`
@@ -112,3 +112,18 @@ ssh-add ~/.ssh/id_ed25519
 ### Ports joignables selon le réseau du poste
 
 Depuis le Wi-Fi élèves (10.0.40.0/23), seuls les ports 22, 80, 443, 3389 et 5900-5910 des IP publiques répondent. Constaté : 6443 et 2222 expirent. Depuis le VPN NetBird, tous les ports passent. L'API Kubernetes (6443) et le DNS interne (53/udp) exigent donc le VPN, même sur place.
+
+## 5. Cycle destroy puis apply (10/11/2026)
+
+`terraform destroy` (11 ressources, VPC compris) puis `terraform apply` depuis un état vide, sans intervention manuelle.
+
+| Mesure | Valeur |
+|---|---|
+| Ressources recréées | 11 : VPC, tier, clé SSH, 3 VM, 2 IP publiques, redirections d'administration, 2 règles de load balancer |
+| Durée du `apply` | environ 1 min 10 s (16:31:11 à 16:32:22, d'après l'horodatage des fichiers d'état ; la sortie chronométrée du terminal n'a pas été conservée) |
+| `terraform plan` ensuite | « No changes » |
+| SSH | Odin en direct, Thor et Tyr par rebond : sessions ouvertes, cloud-init `done` sur les trois |
+| IP publiques | inchangées cette fois : Source NAT 10.0.50.26, administration 10.0.50.31, applicative 10.0.50.33. Ce n'est pas garanti |
+| VPC | nouvel ID `11019b5b-43cd-4d5b-af58-7b939fe77bf7` |
+
+Les clés d'hôte SSH changent à chaque recréation : purger `known_hosts` (`ssh-keygen -R <adresse>`) avant de se reconnecter.

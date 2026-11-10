@@ -62,12 +62,10 @@ terraform plan   # doit afficher « No changes »
 
 ```powershell
 terraform init
-
-# Le VPC a été créé à la main au lot 1 : on l'importe, on ne le recrée pas.
-# L'ID est préfixé par le projet.
-terraform import cloudstack_vpc.asgard smb-g3/987d7024-2c8d-42d6-bd78-7b4400a20e50
-terraform plan   # aucun remplacement du VPC ne doit être proposé
+terraform plan
 ```
+
+Le VPC est géré par Terraform comme le reste. Historique : celui du lot 1 avait été créé à la main, puis importé (`terraform import cloudstack_vpc.asgard smb-g3/<ID du VPC>`, l'ID étant préfixé par le projet). Cette commande ne sert plus que si un VPC est de nouveau créé hors Terraform.
 
 Création par étapes :
 
@@ -107,6 +105,8 @@ terraform apply
 terraform output
 ```
 
-- `terraform destroy` supprime aussi le VPC importé. Le `apply` suivant le recrée avec un nouvel ID : aucun nouvel import n'est nécessaire.
+- `terraform destroy` supprime aussi le VPC. Le `apply` suivant le recrée avec un nouvel ID : aucun import n'est nécessaire.
+- Cycle réalisé le 10/11/2026 : 11 ressources recréées en 1 min 10 s environ, plan « No changes » ensuite.
+- Les clés d'hôte SSH des VM changent : `ssh-keygen -R <adresse>` avant de se reconnecter.
 - Les VM sont purgées à la destruction (`expunge = true`). Sans cela, leurs IP fixes resteraient réservées et bloqueraient le `apply`.
-- Les IP publiques changent en général : mettre à jour l'inventaire Ansible, la règle NRPT des postes et les `certSANs` de l'API.
+- Les IP publiques peuvent changer (elles sont restées identiques le 10/11/2026) : mettre à jour l'inventaire Ansible, la règle NRPT des postes et les `certSANs` de l'API.

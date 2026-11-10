@@ -45,7 +45,7 @@ Système : Ubuntu 24.04, template public `Ubuntu 24.04 LTS` du lab. Disque racin
 
 | Réseau | CIDR | Usage |
 |---|---|---|
-| VPC `vpc-smb-g3` | 10.35.0.0/16 | Super-réseau, déjà créé (ID `987d7024-2c8d-42d6-bd78-7b4400a20e50`) |
+| VPC `vpc-smb-g3` | 10.35.0.0/16 | Super-réseau, géré par Terraform (l'ID change à chaque recréation : `terraform state show cloudstack_vpc.asgard`) |
 | Tier Asgard | 10.35.10.0/24 | Réseau des trois VM |
 | Pods (Calico VXLAN) | 10.244.0.0/16 | `podSubnet` kubeadm, pool IP Calico |
 | Services Kubernetes | 10.96.0.0/12 | `serviceSubnet` kubeadm (10.96.0.0 à 10.111.255.255) |

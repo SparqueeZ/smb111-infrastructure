@@ -1,5 +1,5 @@
-# VPC créé à la main au lot 1 puis importé :
-#   terraform import cloudstack_vpc.asgard smb-g3/987d7024-2c8d-42d6-bd78-7b4400a20e50
+# Le VPC est entièrement géré par Terraform. Celui du lot 1, créé à la main,
+# avait été importé ; le cycle destroy puis apply l'a recréé.
 # (voir docs/procedures/terraform.md)
 resource "cloudstack_vpc" "asgard" {
   name           = var.vpc_name
