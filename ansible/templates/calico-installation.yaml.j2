@@ -1,0 +1,25 @@
+# Géré par Ansible (04_control_plane.yml). Décision D-04 (docs/architecture/decisions.md).
+---
+apiVersion: operator.tigera.io/v1
+kind: Installation
+metadata:
+  name: default
+spec:
+  calicoNetwork:
+    # Le routeur du VPC ne connaît pas le réseau des pods : pas de BGP, tout en VXLAN.
+    bgp: Disabled
+    # Interfaces du tier à 1450, en-tête VXLAN de 50 octets.
+    mtu: {{ k8s_pod_mtu }}
+    ipPools:
+      - name: default-ipv4-ippool
+        cidr: "{{ k8s_pod_subnet }}"
+        blockSize: 26
+        encapsulation: VXLAN
+        natOutgoing: Enabled
+        nodeSelector: all()
+---
+apiVersion: operator.tigera.io/v1
+kind: APIServer
+metadata:
+  name: default
+spec: {}

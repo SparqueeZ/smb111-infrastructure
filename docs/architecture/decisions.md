@@ -7,6 +7,7 @@ Projet SMB111 — Émarge. Chaque décision est datée, justifiée et reliée à
 | D-01 | Structure du projet Ansible : celle du cours | 10/11/2026 | adoptée |
 | D-02 | Poste de contrôle Ansible : WSL2 Ubuntu 24.04 | 10/11/2026 | adoptée |
 | D-03 | Kubernetes 1.37 (v1.37.2), runtime containerd 2.2 | 10/11/2026 | adoptée |
+| D-04 | CNI : Calico v3.33.0, VXLAN, BGP désactivé, MTU des pods 1400 | 11/11/2026 | adoptée |
 
 ## D-01 — Structure du projet Ansible
 
@@ -53,3 +54,30 @@ Valeurs inscrites dans `ansible/group_vars/all/main.yml` (`kubernetes_version`) 
 **À vérifier au lot 5.** La compatibilité des charts Helm (Traefik, cert-manager, kube-prometheus-stack, Keycloak) avec 1.37, au moment de leur déploiement.
 
 **Conséquence pour le poste.** `kubectl` et `kubelogin` du poste suivent la même version mineure, à ±1 près.
+
+## D-04 — CNI
+
+**Décision.** **Calico v3.33.0**, installé par l'opérateur Tigera. Encapsulation **VXLAN** sur tout le trafic entre pods, **BGP désactivé**, pool `10.244.0.0/16`, **MTU des pods 1400**.
+
+Valeurs inscrites dans `ansible/group_vars/all/main.yml` (`calico_version`, `k8s_pod_mtu`, `k8s_pod_subnet`) et appliquées par `ansible/04_control_plane.yml` (`templates/calico-installation.yaml.j2`).
+
+**Critères.**
+
+| Critère | Calico VXLAN | Cilium | Flannel |
+|---|---|---|---|
+| NetworkPolicies (lot 7, tests de sécurité du lot 10) | oui, standard Kubernetes et politiques Calico | oui, jusqu'à la couche 7 | **non** |
+| Compatibilité avec le VPC CloudStack | VXLAN : seules les IP des nœuds circulent sur le tier | VXLAN possible aussi | VXLAN |
+| Simplicité d'exploitation | un opérateur, une ressource `Installation` | eBPF, plus de réglages et d'outils à maîtriser | la plus simple |
+| Compatibilité Kubernetes 1.37 | testée depuis la v3.33 (relevé D-03) | non relevée | non relevée |
+| Consommation sur 3 nœuds | modérée | plus élevée (agent, opérateur, Hubble si activé) | faible |
+
+**Raisons.**
+- Le routeur du VPC ne connaît pas le réseau des pods et le lab n'offre pas de BGP : le routage direct est exclu. Avec VXLAN, les paquets échangés entre nœuds portent les adresses `10.35.10.0/24`.
+- Les NetworkPolicies sont exigées pour cloisonner Émarge, PostgreSQL et Keycloak : Flannel est écarté.
+- Cilium apporte l'observabilité et le filtrage de couche 7, non demandés par le sujet, au prix d'une prise en main plus longue.
+- MTU : les interfaces du tier sont à 1450 (mesuré au lot 2). L'en-tête VXLAN prend 50 octets, d'où 1400 pour les pods. Sans ce réglage, les réponses de grande taille seraient fragmentées ou perdues.
+
+**Conséquences.**
+- Le trafic VXLAN (UDP 4789) doit rester autorisé entre les nœuds du tier : à conserver dans l'ACL Heimdall (lot 5).
+- `natOutgoing` activé : les pods sortent vers Internet avec l'adresse du nœud.
+- Le test de fumée réseau du lot 4 valide le MTU avec une réponse de plus de 1500 octets.

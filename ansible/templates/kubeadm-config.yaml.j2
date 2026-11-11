@@ -1,0 +1,39 @@
+# Géré par Ansible (04_control_plane.yml). Ne pas modifier sur le nœud.
+# Valeurs : group_vars/all/main.yml et host_vars/{{ inventory_hostname }}.yml.
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: InitConfiguration
+localAPIEndpoint:
+  advertiseAddress: "{{ node_ip }}"
+  bindPort: {{ k8s_api_port }}
+nodeRegistration:
+  name: "{{ inventory_hostname }}"
+  criSocket: "{{ k8s_cri_socket }}"
+  kubeletExtraArgs:
+    - name: node-ip
+      value: "{{ node_ip }}"
+---
+apiVersion: kubeadm.k8s.io/v1beta4
+kind: ClusterConfiguration
+clusterName: "{{ k8s_cluster_name }}"
+kubernetesVersion: "v{{ kubernetes_version }}"
+# Nom stable devant l'API : il permettra d'ajouter des control planes (bonus HA)
+# sans régénérer les certificats.
+controlPlaneEndpoint: "{{ k8s_api_name }}:{{ k8s_api_port }}"
+apiServer:
+  certSANs:
+    - "{{ k8s_api_name }}"
+    - "{{ inventory_hostname }}"
+    - "{{ inventory_hostname }}.{{ asgard_domain }}"
+    - "{{ node_ip }}"
+    # IP d'administration : kubectl depuis le poste, à travers le VPN.
+    - "{{ asgard_admin_ip }}"
+networking:
+  dnsDomain: cluster.local
+  podSubnet: "{{ k8s_pod_subnet }}"
+  serviceSubnet: "{{ k8s_service_subnet }}"
+---
+apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+# Même pilote de cgroup que containerd (SystemdCgroup = true).
+cgroupDriver: systemd

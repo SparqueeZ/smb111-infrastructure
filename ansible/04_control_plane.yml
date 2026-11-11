@@ -1,0 +1,149 @@
+---
+# Lot 4 — control plane sur Odin (kubeadm init) puis CNI Calico.
+# Idempotent : kubeadm init ne tourne que si /etc/kubernetes/admin.conf est absent.
+- name: Control plane Kubernetes
+  hosts: control_plane
+  become: true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Déposer la configuration kubeadm
+      ansible.builtin.template:
+        src: kubeadm-config.yaml.j2
+        dest: "{{ k8s_kubeadm_config_path }}"
+        owner: root
+        group: root
+        mode: "0600"
+      tags: [kubeadm]
+
+    - name: Valider la configuration kubeadm
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - config
+          - validate
+          - --config
+          - "{{ k8s_kubeadm_config_path }}"
+      changed_when: false
+      tags: [kubeadm]
+
+    - name: Initialiser le control plane
+      ansible.builtin.command:
+        argv:
+          - kubeadm
+          - init
+          - --config
+          - "{{ k8s_kubeadm_config_path }}"
+        creates: /etc/kubernetes/admin.conf
+      tags: [kubeadm]
+
+    - name: Créer le répertoire .kube du compte d'administration
+      ansible.builtin.file:
+        path: "/home/{{ ansible_user }}/.kube"
+        state: directory
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0700"
+      tags: [kubeadm]
+
+    - name: Donner kubectl au compte d'administration sur Odin
+      ansible.builtin.copy:
+        src: /etc/kubernetes/admin.conf
+        dest: "/home/{{ ansible_user }}/.kube/config"
+        remote_src: true
+        owner: "{{ ansible_user }}"
+        group: "{{ ansible_user }}"
+        mode: "0600"
+      tags: [kubeadm]
+
+    - name: Attendre l'API Kubernetes
+      ansible.builtin.command:
+        argv: [kubectl, get, --raw, /readyz]
+      register: k8s_api_ready
+      changed_when: false
+      retries: 30
+      delay: 5
+      until: k8s_api_ready.rc == 0
+      tags: [kubeadm, cni]
+
+    # --- CNI : Calico par l'opérateur Tigera (D-04) ---
+    - name: Créer le répertoire des manifests d'extensions
+      ansible.builtin.file:
+        path: "{{ k8s_addons_dir }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+      tags: [cni]
+
+    - name: Télécharger le manifest de l'opérateur Tigera (version figée)
+      ansible.builtin.get_url:
+        url: "https://raw.githubusercontent.com/projectcalico/calico/{{ calico_version }}/manifests/tigera-operator.yaml"
+        dest: "{{ k8s_addons_dir }}/tigera-operator-{{ calico_version }}.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      tags: [cni]
+
+    - name: Vérifier si l'opérateur Tigera est déjà installé
+      ansible.builtin.command:
+        argv: [kubectl, get, deployment, tigera-operator, --namespace, tigera-operator, --ignore-not-found, --output, name]
+      register: calico_operator
+      changed_when: false
+      failed_when: calico_operator.rc != 0 and 'NotFound' not in calico_operator.stderr
+      tags: [cni]
+
+    # kubectl create et non apply : les CRD dépassent la taille permise pour l'annotation d'apply.
+    - name: Installer l'opérateur Tigera
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - create
+          - --filename
+          - "{{ k8s_addons_dir }}/tigera-operator-{{ calico_version }}.yaml"
+      when: calico_operator.stdout | length == 0
+      changed_when: true
+      tags: [cni]
+
+    - name: Attendre la définition de la ressource Installation
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - wait
+          - --for=condition=Established
+          - crd/installations.operator.tigera.io
+          - crd/apiservers.operator.tigera.io
+          - --timeout=120s
+      changed_when: false
+      tags: [cni]
+
+    - name: Déposer la configuration Calico
+      ansible.builtin.template:
+        src: calico-installation.yaml.j2
+        dest: "{{ k8s_addons_dir }}/calico-installation.yaml"
+        owner: root
+        group: root
+        mode: "0644"
+      tags: [cni]
+
+    - name: Appliquer la configuration Calico
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - apply
+          - --filename
+          - "{{ k8s_addons_dir }}/calico-installation.yaml"
+      register: calico_apply
+      changed_when: "'created' in calico_apply.stdout or 'configured' in calico_apply.stdout"
+      tags: [cni]
+
+    - name: Attendre que le control plane soit Ready
+      ansible.builtin.command:
+        argv:
+          - kubectl
+          - wait
+          - --for=condition=Ready
+          - "node/{{ inventory_hostname }}"
+          - --timeout=600s
+      changed_when: false
+      tags: [cni]

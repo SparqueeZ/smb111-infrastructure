@@ -20,6 +20,17 @@ k8s_api_port: 6443
 k8s_pod_subnet: 10.244.0.0/16
 k8s_service_subnet: 10.96.0.0/12
 
+# Cluster (lot 4)
+k8s_cluster_name: asgard
+k8s_cri_socket: unix:///run/containerd/containerd.sock
+k8s_kubeadm_config_path: /etc/kubernetes/kubeadm-config.yaml
+k8s_addons_dir: /etc/kubernetes/addons
+
+# CNI : Calico VXLAN par l'opérateur Tigera (docs/architecture/decisions.md, D-04).
+calico_version: v3.33.0
+# MTU des pods : 1450 sur les interfaces du tier, moins 50 octets d'en-tête VXLAN.
+k8s_pod_mtu: 1400
+
 # Système
 asgard_timezone: Europe/Paris
 

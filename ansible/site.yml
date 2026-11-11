@@ -8,3 +8,9 @@
 
 - name: Paquets Kubernetes
   ansible.builtin.import_playbook: 03_kubernetes.yml
+
+- name: Control plane et CNI
+  ansible.builtin.import_playbook: 04_control_plane.yml
+
+- name: Workers
+  ansible.builtin.import_playbook: 05_workers.yml

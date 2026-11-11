@@ -1,0 +1,55 @@
+---
+# Lot 4 — intégration des workers (kubeadm join).
+# Idempotent : un worker déjà joint (/etc/kubernetes/kubelet.conf présent) est laissé tel quel,
+# et aucun jeton n'est créé si tous les workers sont déjà dans le cluster.
+- name: Intégrer les workers au cluster
+  hosts: workers
+  become: true
+  tasks:
+    - name: Vérifier si le nœud a déjà rejoint le cluster
+      ansible.builtin.stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: k8s_kubelet_conf
+
+    - name: Générer la commande de jonction sur le control plane
+      ansible.builtin.command:
+        argv: [kubeadm, token, create, --ttl, 30m, --print-join-command]
+      delegate_to: "{{ groups['control_plane'][0] }}"
+      register: k8s_join_command
+      when: not k8s_kubelet_conf.stat.exists
+      changed_when: true
+      no_log: true
+
+    - name: Rejoindre le cluster
+      ansible.builtin.command:
+        cmd: "{{ k8s_join_command.stdout | trim }} --node-name {{ inventory_hostname }}"
+        creates: /etc/kubernetes/kubelet.conf
+      when: not k8s_kubelet_conf.stat.exists
+      no_log: true
+
+- name: Vérifier l'état du cluster
+  hosts: control_plane
+  become: true
+  environment:
+    KUBECONFIG: /etc/kubernetes/admin.conf
+  tasks:
+    - name: Attendre que tous les nœuds soient Ready
+      ansible.builtin.command:
+        argv: [kubectl, wait, --for=condition=Ready, node, --all, --timeout=600s]
+      changed_when: false
+
+    - name: Relever les nœuds
+      ansible.builtin.command:
+        argv: [kubectl, get, nodes, --output, wide]
+      register: k8s_nodes
+      changed_when: false
+
+    - name: Afficher les nœuds
+      ansible.builtin.debug:
+        msg: "{{ k8s_nodes.stdout_lines }}"
+
+    - name: Contrôler le nombre de nœuds attendu
+      ansible.builtin.assert:
+        that:
+          - (k8s_nodes.stdout_lines | length) - 1 == groups['k8s'] | length
+        fail_msg: "Le cluster ne compte pas {{ groups['k8s'] | length }} nœuds."
